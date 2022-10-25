@@ -21,6 +21,37 @@ app.secret_key="test"
 def index():
   return render_template("index.html")
 
+# 註冊
+@app.route("/signup", methods=["POST"])
+def signup():
+  name=request.form["name"]
+  username=request.form["username"]
+  password=request.form["password"]
+  mycursor = mydb.cursor()
+  mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
+  reuslt=mycursor.fetchone()
+  if reuslt != None:
+    return redirect("/error?message=帳號已經被註冊")
+  mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
+  mydb.commit()
+  return redirect("/")
+
+# 登入
+@app.route("/signin", methods=["POST"])
+def signin():
+  username=request.form["signinUsername"]
+  password=request.form["signinPassword"]
+  mycursor = mydb.cursor()
+  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
+  reuslt=mycursor.fetchone()
+  if reuslt[2] == username and reuslt[3]==password:
+    session["username"]=username
+    session["password"]=password
+    session["id"]=reuslt[0]
+    session["name"]=reuslt[1]
+    return redirect("/member")
+  return redirect("/error?message=帳號或密碼輸入錯誤")
+
 # 會員頁面
 @app.route("/member")
 def member():
@@ -55,37 +86,6 @@ def message():
   message=mycursor.fetchall()
   mydb.commit()
   return render_template("member.html",name=session["name"],message=message) 
-
-# 註冊
-@app.route("/signup", methods=["POST"])
-def signup():
-  name=request.form["name"]
-  username=request.form["username"]
-  password=request.form["password"]
-  mycursor = mydb.cursor()
-  mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
-  reuslt=mycursor.fetchone()
-  if reuslt != None:
-    return redirect("/error?message=帳號已經被註冊")
-  mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
-  mydb.commit()
-  return redirect("/")
-
-# 登入
-@app.route("/signin", methods=["POST"])
-def signin():
-  username=request.form["signinUsername"]
-  password=request.form["signinPassword"]
-  mycursor = mydb.cursor()
-  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
-  reuslt=mycursor.fetchone()
-  if reuslt[2] == username and reuslt[3]==password:
-    session["username"]=username
-    session["password"]=password
-    session["id"]=reuslt[0]
-    session["name"]=reuslt[1]
-    return redirect("/member")
-  return redirect("/error?message=帳號或密碼輸入錯誤")
 
 # 錯誤頁面
 @app.route("/error")
