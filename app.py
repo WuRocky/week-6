@@ -15,11 +15,12 @@ app=Flask(
 )
 app.secret_key="test"
 
-
+# 首頁
 @app.route("/")
 def index():
   return render_template("index.html")
 
+# 會員頁面
 @app.route("/member")
 def member():
   if "username" in session:
@@ -41,6 +42,7 @@ def member():
   else:
     return redirect("/")
 
+# 聊天對話
 @app.route("/message", methods=["POST"])
 def message():
   mycursor = mydb.cursor()
@@ -55,7 +57,7 @@ def message():
   mydb.commit()
   return render_template("member.html",name=session["name"],message=message) 
 
-
+# 註冊
 @app.route("/signup", methods=["POST"])
 def signup():
   name=request.form["name"]
@@ -72,9 +74,7 @@ def signup():
   mydb.commit()
   return redirect("/")
 
-
-
-
+# 登入
 @app.route("/signin", methods=["POST"])
 def signin():
   username=request.form["signinUsername"]
@@ -91,16 +91,13 @@ def signin():
       return redirect("/member")
   return redirect("/error?message=帳號或密碼輸入錯誤")
 
-
-
+# 錯誤頁面
 @app.route("/error")
 def error():
   data=request.args.get("message","自訂錯誤訊息")
   return render_template('error.html',message=data)
 
-
-
-
+# 登出
 @app.route("/signout")
 def signout():
   del session["username"],session["id"],session["name"]
