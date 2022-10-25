@@ -1,3 +1,4 @@
+from unittest import result
 import mysql.connector
 from mySQL import MySQLPassword
 from flask import *
@@ -64,11 +65,11 @@ def signup():
   username=request.form["username"]
   password=request.form["password"]
   mycursor = mydb.cursor()
-  sqlSelect = "select * from member"
+  sqlSelect = "select username from member"
   mycursor.execute(sqlSelect)
   reuslt=mycursor.fetchall()
   for x in reuslt:
-    if x[2] == username:
+    if x[0] == username:
       return redirect("/error?message=帳號已經被註冊")
   mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
   mydb.commit()
@@ -80,7 +81,7 @@ def signin():
   username=request.form["signinUsername"]
   password=request.form["signinPassword"]
   mycursor = mydb.cursor()
-  sqlSelect = "select * from member"
+  sqlSelect = "select id,name,username,password from member"
   mycursor.execute(sqlSelect)
   reuslt=mycursor.fetchall()
   for x in reuslt:
