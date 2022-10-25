@@ -26,20 +26,18 @@ def index():
 def member():
   if "username" in session:
     mycursor = mydb.cursor()
-    sqlSelect = "select * from member"
     sqlMessage = "select a.name , b.content \
     from member as a \
     inner join message as b \
     on a.id = b.member_id"
-    mycursor.execute(sqlSelect)
-    reuslt=mycursor.fetchall()
-    for x in reuslt:
-      if x[2] == session["username"]:
-        data = x[1]
-        mycursor.execute(sqlMessage)
-        message=mycursor.fetchall()
-        mydb.commit()
-        return render_template("member.html",name=data,message=message)
+    mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(session["username"],session["password"],))
+    reuslt=mycursor.fetchone()
+    if reuslt[2] == session["username"]:
+      data = reuslt[1]
+      mycursor.execute(sqlMessage)
+      message=mycursor.fetchall()
+      mydb.commit()
+      return render_template("member.html",name=data,message=message)
   else:
     return redirect("/")
 
@@ -65,12 +63,10 @@ def signup():
   username=request.form["username"]
   password=request.form["password"]
   mycursor = mydb.cursor()
-  sqlSelect = "select username from member"
-  mycursor.execute(sqlSelect)
-  reuslt=mycursor.fetchall()
-  for x in reuslt:
-    if x[0] == username:
-      return redirect("/error?message=帳號已經被註冊")
+  mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
+  reuslt=mycursor.fetchone()
+  if reuslt != None:
+    return redirect("/error?message=帳號已經被註冊")
   mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
   mydb.commit()
   return redirect("/")
@@ -81,15 +77,14 @@ def signin():
   username=request.form["signinUsername"]
   password=request.form["signinPassword"]
   mycursor = mydb.cursor()
-  sqlSelect = "select id,name,username,password from member"
-  mycursor.execute(sqlSelect)
-  reuslt=mycursor.fetchall()
-  for x in reuslt:
-    if x[2] == username and x[3] == password:
-      session["username"]=username
-      session["id"]=x[0]
-      session["name"]=x[1]
-      return redirect("/member")
+  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
+  reuslt=mycursor.fetchone()
+  if reuslt[2] == username and reuslt[3]==password:
+    session["username"]=username
+    session["password"]=password
+    session["id"]=reuslt[0]
+    session["name"]=reuslt[1]
+    return redirect("/member")
   return redirect("/error?message=帳號或密碼輸入錯誤")
 
 # 錯誤頁面
