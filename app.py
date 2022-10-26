@@ -61,14 +61,11 @@ def member():
     from member as a \
     inner join message as b \
     on a.id = b.member_id"
-    mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(session["username"],session["password"],))
-    reuslt=mycursor.fetchone()
-    if reuslt[2] == session["username"]:
-      data = reuslt[1]
-      mycursor.execute(sqlMessage)
-      message=mycursor.fetchall()
-      mydb.commit()
-      return render_template("member.html",name=data,message=message)
+    data = session["name"]
+    mycursor.execute(sqlMessage)
+    message=mycursor.fetchall()
+    mydb.commit()
+    return render_template("member.html",name=data,message=message)
   else:
     return redirect("/")
 
