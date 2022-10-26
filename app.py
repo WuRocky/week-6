@@ -1,4 +1,3 @@
-from unittest import result
 import mysql.connector
 from mySQL import MySQLPassword
 from flask import *
@@ -34,6 +33,7 @@ def signup():
     return redirect("/error?message=帳號已經被註冊")
   mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
   mydb.commit()
+  mycursor.close()
   return redirect("/")
 
 # 登入
@@ -50,6 +50,8 @@ def signin():
   session["password"]=password
   session["id"]=reuslt[0]
   session["name"]=reuslt[1]
+  mydb.commit()
+  mycursor.close()
   return redirect("/member")
 
 # 會員頁面
@@ -65,9 +67,9 @@ def member():
     mycursor.execute(sqlMessage)
     message=mycursor.fetchall()
     mydb.commit()
+    mycursor.close()
     return render_template("member.html",name=data,message=message)
-  else:
-    return redirect("/")
+  return redirect("/")
 
 # 聊天對話
 @app.route("/message", methods=["POST"])
@@ -82,6 +84,7 @@ def message():
   mycursor.execute(sqlMessage)
   message=mycursor.fetchall()
   mydb.commit()
+  mycursor.close()
   return render_template("member.html",name=session["name"],message=message) 
 
 # 錯誤頁面
