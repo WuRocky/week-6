@@ -99,10 +99,10 @@ def signout():
   del session["username"],session["id"],session["name"]
   return redirect("/")
 
-
 if __name__ == "__main__": 
   app.run(port=3000,debug=True)
 
+mydb.close()
 
 
 
