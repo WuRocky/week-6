@@ -44,13 +44,13 @@ def signin():
   mycursor = mydb.cursor()
   mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
   reuslt=mycursor.fetchone()
-  if reuslt[2] == username and reuslt[3]==password:
-    session["username"]=username
-    session["password"]=password
-    session["id"]=reuslt[0]
-    session["name"]=reuslt[1]
-    return redirect("/member")
-  return redirect("/error?message=帳號或密碼輸入錯誤")
+  if reuslt == None:
+    return redirect("/error?message=帳號或密碼輸入錯誤")
+  session["username"]=username
+  session["password"]=password
+  session["id"]=reuslt[0]
+  session["name"]=reuslt[1]
+  return redirect("/member")
 
 # 會員頁面
 @app.route("/member")
