@@ -1,12 +1,19 @@
-import mysql.connector
+from mysql.connector import pooling
 from mySQL import MySQLPassword
 from flask import *
-mydb = mysql.connector.connect(
+
+connection_pool = pooling.MySQLConnectionPool(
+  pool_name="python_pool",
+  pool_size=1,
+  pool_reset_session=True,
   host="localhost",
   user="root",
   password=MySQLPassword(),
   database='website'
-)
+  )
+
+mydb = connection_pool.get_connection()
+
 
 app=Flask(
   __name__,
