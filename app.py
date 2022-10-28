@@ -46,28 +46,27 @@ def signup():
   finally:
     mycursor.close()
     connection.close()
-    print("關閉資料庫")
+
 
 # 登入
 @app.route("/signin", methods=["POST"])
 def signin():
-  try:
-    connection = get_connection()
-    mycursor = connection.cursor()
-    username=request.form["signinUsername"]
-    password=request.form["signinPassword"]
-    mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
-    reuslt=mycursor.fetchone()
-    if reuslt == None:
-      return redirect("/error?message=帳號或密碼輸入錯誤")
-    session["username"]=username
-    session["password"]=password
-    session["id"]=reuslt[0]
-    session["name"]=reuslt[1]
-    return redirect("/member")
-  finally:
-    mycursor.close()
-    connection.close()
+  connection = get_connection()
+  mycursor = connection.cursor()
+  username=request.form["signinUsername"]
+  password=request.form["signinPassword"]
+  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
+  reuslt=mycursor.fetchone()
+  if reuslt == None:
+    return redirect("/error?message=帳號或密碼輸入錯誤")
+  session["username"]=username
+  session["password"]=password
+  session["id"]=reuslt[0]
+  session["name"]=reuslt[1]
+  mycursor.close()
+  connection.close()
+  return redirect("/member")
+
 
 # 會員頁面
 @app.route("/member")
@@ -82,6 +81,8 @@ def member():
     data = session["name"]
     mycursor.execute(sqlMessage)
     message=mycursor.fetchall()
+    mycursor.close()
+    connection.close()
     return render_template("member.html",name=data,message=message)
   return redirect("/")
 
