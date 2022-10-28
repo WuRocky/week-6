@@ -2,25 +2,24 @@ from mysql.connector import pooling
 from mySQL import MySQLPassword
 from flask import *
 
-connection_pool = pooling.MySQLConnectionPool(
-  pool_name="python_pool",
-  pool_size=1,
-  pool_reset_session=True,
-  host="localhost",
-  user="root",
-  password=MySQLPassword(),
-  database='website'
-  )
-
-mydb = connection_pool.get_connection()
-
-
 app=Flask(
   __name__,
   static_folder="public",
   static_url_path="/"
 )
 app.secret_key="test"
+
+def get_connection():
+  connection = pooling.MySQLConnectionPool(
+    pool_name="python_pool",
+    pool_size=10,
+    pool_reset_session=True,
+    host="localhost",
+    user="root",
+    password=MySQLPassword(),
+    database='website'
+    )
+  return connection.get_connection()
 
 # 首頁
 @app.route("/")
@@ -30,42 +29,52 @@ def index():
 # 註冊
 @app.route("/signup", methods=["POST"])
 def signup():
-  name=request.form["name"]
-  username=request.form["username"]
-  password=request.form["password"]
-  mycursor = mydb.cursor()
-  mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
-  reuslt=mycursor.fetchone()
-  if reuslt != None:
-    return redirect("/error?message=帳號已經被註冊")
-  mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
-  mydb.commit()
-  mycursor.close()
-  return redirect("/")
+  try:
+    connection = get_connection()
+    mycursor = connection.cursor()
+    name=request.form["name"]
+    username=request.form["username"]
+    password=request.form["password"]
+    mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
+    reuslt=mycursor.fetchone()
+
+    if reuslt != None:
+      return redirect("/error?message=帳號已經被註冊")
+    mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
+    connection.commit()
+    return redirect("/")
+  finally:
+    mycursor.close()
+    connection.close()
+    print("關閉資料庫")
 
 # 登入
 @app.route("/signin", methods=["POST"])
 def signin():
-  username=request.form["signinUsername"]
-  password=request.form["signinPassword"]
-  mycursor = mydb.cursor()
-  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
-  reuslt=mycursor.fetchone()
-  if reuslt == None:
-    return redirect("/error?message=帳號或密碼輸入錯誤")
-  session["username"]=username
-  session["password"]=password
-  session["id"]=reuslt[0]
-  session["name"]=reuslt[1]
-  mydb.commit()
-  mycursor.close()
-  return redirect("/member")
+  try:
+    connection = get_connection()
+    mycursor = connection.cursor()
+    username=request.form["signinUsername"]
+    password=request.form["signinPassword"]
+    mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
+    reuslt=mycursor.fetchone()
+    if reuslt == None:
+      return redirect("/error?message=帳號或密碼輸入錯誤")
+    session["username"]=username
+    session["password"]=password
+    session["id"]=reuslt[0]
+    session["name"]=reuslt[1]
+    return redirect("/member")
+  finally:
+    mycursor.close()
+    connection.close()
 
 # 會員頁面
 @app.route("/member")
 def member():
   if "username" in session:
-    mycursor = mydb.cursor()
+    connection = get_connection()
+    mycursor = connection.cursor()
     sqlMessage = "select a.name , b.content \
     from member as a \
     inner join message as b \
@@ -73,26 +82,29 @@ def member():
     data = session["name"]
     mycursor.execute(sqlMessage)
     message=mycursor.fetchall()
-    mydb.commit()
-    mycursor.close()
     return render_template("member.html",name=data,message=message)
   return redirect("/")
 
 # 聊天對話
 @app.route("/message", methods=["POST"])
 def message():
-  mycursor = mydb.cursor()
-  content = request.form["content"]
-  mycursor.execute("insert into message(member_id, content) values(%s, %s)",(session["id"],content))
-  sqlMessage = "select a.name , b.content \
-  from member as a \
-  inner join message as b \
-  on a.id = b.member_id"
-  mycursor.execute(sqlMessage)
-  message=mycursor.fetchall()
-  mydb.commit()
-  mycursor.close()
-  return render_template("member.html",name=session["name"],message=message) 
+  try:
+    connection = get_connection()
+    mycursor = connection.cursor()
+    content = request.form["content"]
+    mycursor.execute("insert into message(member_id, content) values(%s, %s)",(session["id"],content))
+    sqlMessage = "select a.name , b.content \
+    from member as a \
+    inner join message as b \
+    on a.id = b.member_id"
+    mycursor.execute(sqlMessage)
+    message=mycursor.fetchall()
+    connection.commit()
+    return render_template("member.html",name=session["name"],message=message) 
+  finally:
+    mycursor.close()
+    connection.close()
+
 
 # 錯誤頁面
 @app.route("/error")
@@ -108,8 +120,4 @@ def signout():
 
 if __name__ == "__main__": 
   app.run(port=3000,debug=True)
-
-mydb.close()
-
-
 
