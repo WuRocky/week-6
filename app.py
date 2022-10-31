@@ -37,7 +37,6 @@ def signup():
     password=request.form["password"]
     mycursor.execute("select username from member where username = %s LIMIT 1",(username,))
     reuslt=mycursor.fetchone()
-
     if reuslt != None:
       return redirect("/error?message=帳號已經被註冊")
     mycursor.execute("insert into member(name, username, password) values(%s, %s, %s)",(name,username,password))
@@ -51,40 +50,44 @@ def signup():
 # 登入
 @app.route("/signin", methods=["POST"])
 def signin():
-  connection = get_connection()
-  mycursor = connection.cursor()
-  username=request.form["signinUsername"]
-  password=request.form["signinPassword"]
-  mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
-  reuslt=mycursor.fetchone()
-  if reuslt == None:
-    return redirect("/error?message=帳號或密碼輸入錯誤")
-  session["username"]=username
-  session["password"]=password
-  session["id"]=reuslt[0]
-  session["name"]=reuslt[1]
-  mycursor.close()
-  connection.close()
-  return redirect("/member")
+  try:
+    connection = get_connection()
+    mycursor = connection.cursor()
+    username=request.form["signinUsername"]
+    password=request.form["signinPassword"]
+    mycursor.execute("select id,name,username,password from member where username = %s and password =%s LIMIT 1",(username,password,))
+    reuslt=mycursor.fetchone()
+    if reuslt == None:
+      return redirect("/error?message=帳號或密碼輸入錯誤")
+    session["username"]=username
+    session["password"]=password
+    session["id"]=reuslt[0]
+    session["name"]=reuslt[1]
+    return redirect("/member")
+  finally:
+    mycursor.close()
+    connection.close()
 
 
 # 會員頁面
 @app.route("/member")
 def member():
-  if "username" in session:
+  try:
     connection = get_connection()
     mycursor = connection.cursor()
     sqlMessage = "select a.name , b.content \
     from member as a \
     inner join message as b \
     on a.id = b.member_id"
-    data = session["name"]
-    mycursor.execute(sqlMessage)
-    message=mycursor.fetchall()
+    if "username" in session:
+      data = session["name"]
+      mycursor.execute(sqlMessage)
+      message=mycursor.fetchall()
+      return render_template("member.html",name=data,message=message)
+    return redirect("/")
+  finally:
     mycursor.close()
     connection.close()
-    return render_template("member.html",name=data,message=message)
-  return redirect("/")
 
 # 聊天對話
 @app.route("/message", methods=["POST"])
